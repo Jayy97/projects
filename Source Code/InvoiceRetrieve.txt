@@ -1,0 +1,134 @@
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.sql.*;
+import javax.swing.*;
+import java.awt.*;
+import javax.swing.JFrame;
+
+public class InvoiceRetrieve extends JFrame implements ActionListener {
+    private JTextField txtinvID;
+
+    public InvoiceRetrieve() {
+        setTitle("Retrieve Invoice");
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setSize(400, 250);
+        setLocationRelativeTo(null);
+
+        // Create welcome message label
+        JLabel welcomeLabel = new JLabel(
+                "<html>Please enter the ID of the Invoice<br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; that you are searching for</html>");
+        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        welcomeLabel.setForeground(new Color(0x009688));
+        welcomeLabel.setHorizontalAlignment(JLabel.CENTER);
+
+        // Create form panel
+        JPanel formPanel = new JPanel(new FlowLayout());
+        formPanel.setBackground(new Color(0xFFFFFF));
+        JLabel idLabel = new JLabel("Invoice ID:");
+        txtinvID = new JTextField();
+        txtinvID.setColumns(10);
+        formPanel.add(idLabel);
+        formPanel.add(txtinvID);
+
+        // Create button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(new Color(0xFFFFFF));
+        JButton retrieveButton = new JButton("Retrieve");
+        retrieveButton.setBackground(new Color(0x009688));
+        retrieveButton.setForeground(new Color(0xFFFFFF));
+        retrieveButton.setFocusPainted(false);
+        retrieveButton.addActionListener(this);
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.setBackground(new Color(0x009688));
+        cancelButton.setForeground(new Color(0xFFFFFF));
+        cancelButton.setFocusPainted(false);
+        cancelButton.addActionListener(e -> {
+            dispose();
+            new InvoicesPage().setVisible(true);
+        });
+        buttonPanel.add(retrieveButton);
+        buttonPanel.add(cancelButton);
+
+        // Wrap form panel and button panel in another panel
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBackground(new Color(0xFFFFFF));
+        wrapperPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        wrapperPanel.add(formPanel, BorderLayout.CENTER);
+        wrapperPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add components to the frame
+        Container container = getContentPane();
+        container.setLayout(new BorderLayout(0, 20));
+        container.setBackground(new Color(0xFFFFFF));
+        container.add(welcomeLabel, BorderLayout.NORTH);
+        container.add(wrapperPanel, BorderLayout.CENTER);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        retrieveInvoice();
+    }
+
+    private void retrieveInvoice() {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            String url = "jdbc:mysql://localhost:3306/purchases";
+            String user = "root";
+            String password = "Jamie1997";
+            conn = DriverManager.getConnection(url, user, password);
+
+            // Get the invoice ID from the GUI and validate it
+            int invID = 0;
+            try {
+                invID = Integer.parseInt(txtinvID.getText().trim());
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Invalid invoice ID. Please enter a valid integer.");
+                return;
+            }
+            String sql = "SELECT * FROM invoice WHERE invID = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, invID);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                // Display the invoice data in a dialog box
+                String custID = rs.getString("custID");
+                String prodID = rs.getString("prodID");
+                String invTotal = rs.getString("invTotal");
+                String message = "These are the details of the selected Invoice:\n\n"
+                        + "Invoice ID: " + invID + "\n"
+                        + "Customer ID: " + custID + "\n"
+                        + "Product ID: " + prodID + "\n"
+                        + "Invoice Total: " + invTotal + "\n";
+                JOptionPane.showMessageDialog(this, message);
+                dispose();
+                new InvoicesPage().setVisible(true);
+            } else {
+                JOptionPane.showMessageDialog(this, "Invoice not found. Please enter a correct Invoice ID");
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error retrieving invoice data: " + e.getMessage());
+        } finally {
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+                if (pstmt != null) {
+                    pstmt.close();
+                }
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Error closing database resources: " + ex.getMessage());
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        new InvoiceRetrieve();
+    }
+}
