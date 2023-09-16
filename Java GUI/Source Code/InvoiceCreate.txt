@@ -1,0 +1,137 @@
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.sql.*;
+import javax.swing.*;
+import java.awt.*;
+import javax.swing.JFrame;
+
+public class InvoiceCreate extends JFrame implements ActionListener {
+    private JTextField customerIdField, productIdField, productAmountField;
+
+    public InvoiceCreate() {
+        setTitle("Create Invoice");
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setSize(400, 250);
+        setLocationRelativeTo(null);
+
+        // Create form panel
+        JPanel formPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        formPanel.setBackground(new Color(0xFFFFFF));
+        JLabel custIDLabel = new JLabel("Customer ID:");
+        customerIdField = new JTextField();
+        JLabel prodIDLabel = new JLabel("Product ID:");
+        productIdField = new JTextField();
+        JLabel prodamountLabel = new JLabel("Product Amount:");
+        productAmountField = new JTextField();
+        formPanel.add(custIDLabel);
+        formPanel.add(customerIdField);
+        formPanel.add(prodIDLabel);
+        formPanel.add(productIdField);
+        formPanel.add(prodamountLabel);
+        formPanel.add(productAmountField);
+
+        // Create button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(new Color(0xFFFFFF));
+        JButton createButton = new JButton("Create");
+        createButton.setBackground(new Color(0x009688));
+        createButton.setForeground(new Color(0xFFFFFF));
+        createButton.setFocusPainted(false);
+        createButton.addActionListener(this);
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.setBackground(new Color(0x009688));
+        cancelButton.setForeground(new Color(0xFFFFFF));
+        cancelButton.setFocusPainted(false);
+        cancelButton.addActionListener(e -> {
+            dispose();
+            new InvoicesPage().setVisible(true);
+        });
+        buttonPanel.add(createButton);
+        buttonPanel.add(cancelButton);
+
+        // Wrap form panel and button panel in another panel
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBackground(new Color(0xFFFFFF));
+        wrapperPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        wrapperPanel.add(formPanel, BorderLayout.CENTER);
+        wrapperPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add components to the frame
+        Container container = getContentPane();
+        container.setLayout(new BorderLayout(0, 20));
+        container.setBackground(new Color(0xFFFFFF));
+        container.add(wrapperPanel, BorderLayout.CENTER);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        createInvoice();
+    }
+
+    private void createInvoice() {
+        // get the entered values from the form fields
+        int customerId = Integer.parseInt(customerIdField.getText());
+        int productId = Integer.parseInt(productIdField.getText());
+        int productAmount = Integer.parseInt(productAmountField.getText());
+
+        // calculate the invoice total using the ProdCost of the chosen ProdID
+        double invoiceTotal = 0.0;
+        try {
+            // connect to the database
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/purchases", "root", "Jamie1997");
+
+            // create the SQL statement to retrieve the ProdCost from the product table
+            String sql = "SELECT ProdCost, ProdStock FROM product WHERE ProdID = ?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, productId);
+
+            // execute the statement and retrieve the ProdCost
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                double prodCost = rs.getDouble("ProdCost");
+                int prodStock = rs.getInt("ProdStock");
+                invoiceTotal = prodCost * productAmount;
+
+                // check if there is enough stock to fulfill the order
+                if (prodStock < productAmount) {
+                    JOptionPane.showMessageDialog(this, "Not enough stock to fulfill the order.");
+                    return;
+                }
+
+                // update the product table by subtracting the productAmount from ProdStock
+                sql = "UPDATE product SET ProdStock = ProdStock - ? WHERE ProdID = ?";
+                stmt = conn.prepareStatement(sql);
+                stmt.setInt(1, productAmount);
+                stmt.setInt(2, productId);
+                stmt.executeUpdate();
+            } else {
+                // no product found with the given productId
+                JOptionPane.showMessageDialog(this, "No product found with ID " + productId);
+                return;
+            }
+
+            // close the result set and statement
+            rs.close();
+            stmt.close();
+
+            // insert the invoice into the invoice table
+            sql = "INSERT INTO invoice (custID, prodID, invTotal) VALUES (?, ?, ?)";
+            stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, customerId);
+            stmt.setInt(2, productId);
+            stmt.setDouble(3, invoiceTotal);
+            stmt.executeUpdate();
+
+            // close the statement and connection
+            stmt.close();
+            conn.close();
+
+            JOptionPane.showMessageDialog(this, "Invoice created successfully.");
+            dispose();
+            new InvoicesPage().setVisible(true);
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error creating invoice: " + ex.getMessage());
+            return;
+        }
+    }
+}
