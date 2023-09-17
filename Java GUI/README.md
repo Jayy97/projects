@@ -5,5 +5,5 @@ full CRUD functions that are connected to a database.
 
 Coded entirely in java
 
-See Screencast for visual representation
+See Screencast for visual representation (download only as file too big)
 
