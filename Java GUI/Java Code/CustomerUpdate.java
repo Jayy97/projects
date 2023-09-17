@@ -1,0 +1,184 @@
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+import javax.swing.*;
+
+/**
+ * 
+ * A class representing a GUI window for updating customer information
+ * 
+ * Extends the JFrame class and implements the ActionListener interface
+ */
+public class CustomerUpdate extends JFrame implements ActionListener {
+    /**
+     * 
+     * JTextField for customer ID input
+     */
+    /**
+     * 
+     * JTextField for first name input
+     */
+    /**
+     * 
+     * JTextField for last name input
+     */
+    /**
+     * 
+     * JTextField for address input
+     */
+    /**
+     * 
+     * JTextField for phone number input
+     */
+    private JTextField txtCustID, txtFirstName, txtLastName, txtAddress, txtPhoneNum;
+
+    /**
+     * 
+     * Constructs a new CustomerUpdate window
+     * Sets the title, default close operation, size, and location of the window
+     */
+
+    public CustomerUpdate() {
+        setTitle("Update Customer");
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setSize(400, 350);
+        setLocationRelativeTo(null);
+
+        // Create welcome message label
+        JLabel welcomeLabel = new JLabel(
+                "<html>Please enter the Customer details <br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; that you wish to update</html>");
+        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        welcomeLabel.setForeground(new Color(0x009688));
+        welcomeLabel.setHorizontalAlignment(JLabel.CENTER);
+
+        // Create form panel
+        JPanel formPanel = new JPanel(new GridLayout(5, 2, 10, 10));
+        formPanel.setBackground(new Color(0xFFFFFF));
+        JLabel idLabel = new JLabel("Customer ID:");
+        txtCustID = new JTextField();
+        txtCustID.setColumns(10);
+        JLabel firstNameLabel = new JLabel("First Name:");
+        txtFirstName = new JTextField();
+        txtFirstName.setColumns(10);
+        JLabel lastNameLabel = new JLabel("Last Name:");
+        txtLastName = new JTextField();
+        txtLastName.setColumns(10);
+        JLabel addressLabel = new JLabel("Address:");
+        txtAddress = new JTextField();
+        txtAddress.setColumns(10);
+        JLabel phoneNumLabel = new JLabel("Phone Number:");
+        txtPhoneNum = new JTextField();
+        txtPhoneNum.setColumns(10);
+        formPanel.add(idLabel);
+        formPanel.add(txtCustID);
+        formPanel.add(firstNameLabel);
+        formPanel.add(txtFirstName);
+        formPanel.add(lastNameLabel);
+        formPanel.add(txtLastName);
+        formPanel.add(addressLabel);
+        formPanel.add(txtAddress);
+        formPanel.add(phoneNumLabel);
+        formPanel.add(txtPhoneNum);
+
+        // Create button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(new Color(0xFFFFFF));
+        JButton updateButton = new JButton("Update");
+        updateButton.setBackground(new Color(0x009688));
+        updateButton.setForeground(new Color(0xFFFFFF));
+        updateButton.setFocusPainted(false);
+        updateButton.addActionListener(this);
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.setBackground(new Color(0x009688));
+        cancelButton.setForeground(new Color(0xFFFFFF));
+        cancelButton.setFocusPainted(false);
+        cancelButton.addActionListener(e -> {
+            dispose();
+            new CustomersPage().setVisible(true);
+        });
+        buttonPanel.add(updateButton);
+        buttonPanel.add(cancelButton);
+
+        // Wrap form panel and button panel in another panel
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBackground(new Color(0xFFFFFF));
+        wrapperPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        wrapperPanel.add(formPanel, BorderLayout.CENTER);
+        wrapperPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add components to the frame
+        Container container = getContentPane();
+        container.setLayout(new BorderLayout(0, 20));
+        container.setBackground(new Color(0xFFFFFF));
+        container.add(welcomeLabel, BorderLayout.NORTH);
+        container.add(wrapperPanel, BorderLayout.CENTER);
+    }
+
+    /**
+     * @param e
+     */
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        updateCustomer();
+    }
+
+    private void updateCustomer() {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            String url = "jdbc:mysql://localhost:3306/purchases";
+            String user = "root";
+            String password = "Jamie1997";
+            // Establish a connection to the database
+            conn = DriverManager.getConnection(url, user, password);
+
+            // Prepare the SQL statement
+            String sql = "UPDATE customer SET FirstName=?, LastName=?, Address=?, PhoneNum=? WHERE CustID=?";
+            pstmt = conn.prepareStatement(sql);
+
+            // Set the values of the parameters
+            pstmt.setString(1, txtFirstName.getText());
+            pstmt.setString(2, txtLastName.getText());
+            pstmt.setString(3, txtAddress.getText());
+            pstmt.setString(4, txtPhoneNum.getText());
+            pstmt.setString(5, txtCustID.getText());
+
+            // Execute the SQL statement
+            int rowsUpdated = pstmt.executeUpdate();
+            if (rowsUpdated > 0) {
+                JOptionPane.showMessageDialog(null, "Customer updated successfully");
+                dispose();
+                new CustomersPage().setVisible(true);
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to update customer");
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "An error occurred while updating customer: " + ex.getMessage());
+        } finally {
+            // Close the database resources
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+                if (pstmt != null) {
+                    pstmt.close();
+                }
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(null,
+                        "An error occurred while closing database resources: " + ex.getMessage());
+            }
+        }
+    }
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        CustomerUpdate customerUpdate = new CustomerUpdate();
+        customerUpdate.setVisible(true);
+    }
+}

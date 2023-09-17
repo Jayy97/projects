@@ -1,0 +1,162 @@
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.sql.*;
+import javax.swing.*;
+import java.awt.*;
+import javax.swing.JFrame;
+
+/**
+ * 
+ * A class representing a GUI window for creating a new customer.
+ * 
+ * Extends JFrame and implements ActionListener.
+ * 
+ * Contains fields for the customer's first name, last name, address, and phone
+ * number.
+ */
+public class CustomerCreate extends JFrame implements ActionListener {
+    /**
+     * 
+     * Text field for entering the customer's first name.
+     */
+    /**
+     * 
+     * Text field for entering the customer's last name.
+     */
+    /**
+     * 
+     * Text field for entering the customer's address.
+     */
+    /**
+     * 
+     * Text field for entering the customer's phone number.
+     */
+    private JTextField firstNameField, lastNameField, addressField, phoneNumField;
+
+    /**
+     * 
+     * Constructor for the CustomerCreate class.
+     * Sets the title, default close operation, size, and location of the JFrame.
+     */
+
+    public CustomerCreate() {
+        setTitle("Create Customer");
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setSize(400, 250);
+        setLocationRelativeTo(null);
+
+        // Create form panel
+        JPanel formPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        formPanel.setBackground(new Color(0xFFFFFF));
+        JLabel firstNameLabel = new JLabel("First Name:");
+        firstNameField = new JTextField();
+        JLabel lastNameLabel = new JLabel("Last Name:");
+        lastNameField = new JTextField();
+        JLabel addressLabel = new JLabel("Address:");
+        addressField = new JTextField();
+        JLabel phoneNumLabel = new JLabel("Phone Number:");
+        phoneNumField = new JTextField();
+        formPanel.add(firstNameLabel);
+        formPanel.add(firstNameField);
+        formPanel.add(lastNameLabel);
+        formPanel.add(lastNameField);
+        formPanel.add(addressLabel);
+        formPanel.add(addressField);
+        formPanel.add(phoneNumLabel);
+        formPanel.add(phoneNumField);
+
+        // Create button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(new Color(0xFFFFFF));
+        JButton createButton = new JButton("Create");
+        createButton.setBackground(new Color(0x009688));
+        createButton.setForeground(new Color(0xFFFFFF));
+        createButton.setFocusPainted(false);
+        createButton.addActionListener(this);
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.setBackground(new Color(0x009688));
+        cancelButton.setForeground(new Color(0xFFFFFF));
+        cancelButton.setFocusPainted(false);
+        cancelButton.addActionListener(e -> {
+            dispose();
+            new CustomersPage().setVisible(true);
+        });
+        buttonPanel.add(createButton);
+        buttonPanel.add(cancelButton);
+
+        // Wrap form panel and button panel in another panel
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBackground(new Color(0xFFFFFF));
+        wrapperPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        wrapperPanel.add(formPanel, BorderLayout.CENTER);
+        wrapperPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add components to the frame
+        Container container = getContentPane();
+        container.setLayout(new BorderLayout(0, 20));
+        container.setBackground(new Color(0xFFFFFF));
+        container.add(wrapperPanel, BorderLayout.CENTER);
+    }
+
+    /**
+     * 
+     * Invoked when an action occurs.
+     * 
+     * @param e the ActionEvent that occurred
+     */
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getActionCommand().equals("Create")) {
+            Connection conn = null;
+            PreparedStatement pstmt = null;
+            try {
+                String url = "jdbc:mysql://localhost:3306/purchases";
+                String user = "root";
+                String password = "Jamie1997";
+                conn = DriverManager.getConnection(url, user, password);
+
+                // Get the new customer details from the GUI inputs
+                String firstName = firstNameField.getText();
+                String lastName = lastNameField.getText();
+                String address = addressField.getText();
+                String phoneNum = phoneNumField.getText();
+
+                // Prepare the SQL statement with parameters for the new customer data
+                String sql = "INSERT INTO customer (FirstName, LastName, Address, PhoneNum) " +
+                        "VALUES (?, ?, ?, ?)";
+                pstmt = conn.prepareStatement(sql);
+
+                // Set the values for the parameters in the SQL statement
+                pstmt.setString(1, firstName);
+                pstmt.setString(2, lastName);
+                pstmt.setString(3, address);
+                pstmt.setString(4, phoneNum);
+
+                // Execute the SQL statement to insert the new customer data
+                int rowsInserted = pstmt.executeUpdate();
+                if (rowsInserted > 0) {
+                    JOptionPane.showMessageDialog(null, "A new customer has been added to the database.", "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    dispose();
+                    new CustomersPage().setVisible(true);
+                }
+
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(null, "Error inserting new customer: " + ex.getMessage(), "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            } finally {
+                try {
+                    if (pstmt != null) {
+                        pstmt.close();
+                    }
+                    if (conn != null) {
+                        conn.close();
+                    }
+                } catch (SQLException ex) {
+                    JOptionPane.showMessageDialog(null, "Error closing database resources: " + ex.getMessage(), "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
+    }
+}

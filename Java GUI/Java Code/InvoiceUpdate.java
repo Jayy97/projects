@@ -1,0 +1,160 @@
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+import javax.swing.*;
+
+/**
+ * 
+ * A GUI for updating an existing invoice's information
+ */
+public class InvoiceUpdate extends JFrame implements ActionListener {
+    /** Text field for inputting the invoice ID */
+    /** Text field for inputting the customer ID */
+    /** Text field for inputting the product ID */
+    /** Text field for inputting the invoice total */
+    private JTextField txtinvID, txtcustID, txtprodID, txtinvTotal;
+
+    /**
+     * 
+     * Constructs an instance of the InvoiceUpdate class.
+     * Initializes the GUI components and sets up the frame.
+     */
+
+    public InvoiceUpdate() {
+        setTitle("Update Invoice");
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setSize(400, 350);
+        setLocationRelativeTo(null);
+
+        // Create welcome message label
+        JLabel welcomeLabel = new JLabel(
+                "<html>Please update the selected Invoice</html>");
+        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        welcomeLabel.setForeground(new Color(0x009688));
+        welcomeLabel.setHorizontalAlignment(JLabel.CENTER);
+
+        // Create form panel
+        JPanel formPanel = new JPanel(new GridLayout(5, 2, 10, 10));
+        formPanel.setBackground(new Color(0xFFFFFF));
+        JLabel idLabel = new JLabel("Invoice ID:");
+        txtinvID = new JTextField();
+        txtinvID.setColumns(10);
+        JLabel firstNameLabel = new JLabel("Customer ID:");
+        txtcustID = new JTextField();
+        txtcustID.setColumns(10);
+        JLabel lastNameLabel = new JLabel("Product ID:");
+        txtprodID = new JTextField();
+        txtprodID.setColumns(10);
+        JLabel addressLabel = new JLabel("Invoice Total:");
+        txtinvTotal = new JTextField();
+        txtinvTotal.setColumns(10);
+        formPanel.add(idLabel);
+        formPanel.add(txtinvID);
+        formPanel.add(firstNameLabel);
+        formPanel.add(txtcustID);
+        formPanel.add(lastNameLabel);
+        formPanel.add(txtprodID);
+        formPanel.add(addressLabel);
+        formPanel.add(txtinvTotal);
+
+        // Create button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(new Color(0xFFFFFF));
+        JButton updateButton = new JButton("Update");
+        updateButton.setBackground(new Color(0x009688));
+        updateButton.setForeground(new Color(0xFFFFFF));
+        updateButton.setFocusPainted(false);
+        updateButton.addActionListener(this);
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.setBackground(new Color(0x009688));
+        cancelButton.setForeground(new Color(0xFFFFFF));
+        cancelButton.setFocusPainted(false);
+        cancelButton.addActionListener(e -> {
+            dispose();
+            new InvoicesPage().setVisible(true);
+        });
+        buttonPanel.add(updateButton);
+        buttonPanel.add(cancelButton);
+
+        // Wrap form panel and button panel in another panel
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBackground(new Color(0xFFFFFF));
+        wrapperPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        wrapperPanel.add(formPanel, BorderLayout.CENTER);
+        wrapperPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add components to the frame
+        Container container = getContentPane();
+        container.setLayout(new BorderLayout(0, 20));
+        container.setBackground(new Color(0xFFFFFF));
+        container.add(welcomeLabel, BorderLayout.NORTH);
+        container.add(wrapperPanel, BorderLayout.CENTER);
+    }
+
+    /**
+     * @param e
+     */
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        updateInvoice();
+    }
+
+    private void updateInvoice() {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            String url = "jdbc:mysql://localhost:3306/purchases";
+            String user = "root";
+            String password = "Jamie1997";
+            // Establish a connection to the database
+            conn = DriverManager.getConnection(url, user, password);
+
+            // Prepare the SQL statement
+            String sql = "UPDATE invoice SET custID=?, prodID=?, invTotal=? WHERE invID=?";
+            pstmt = conn.prepareStatement(sql);
+
+            // Set the values of the parameters
+            pstmt.setString(1, txtcustID.getText());
+            pstmt.setString(2, txtprodID.getText());
+            pstmt.setString(3, txtinvTotal.getText());
+            pstmt.setString(4, txtinvID.getText());
+
+            // Execute the SQL statement
+            int rowsUpdated = pstmt.executeUpdate();
+            if (rowsUpdated > 0) {
+                JOptionPane.showMessageDialog(null, "Invoice updated successfully");
+                dispose();
+                new InvoicesPage().setVisible(true);
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to update invoice");
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "An error occurred while updating invoice: " + ex.getMessage());
+        } finally {
+            // Close the database resources
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+                if (pstmt != null) {
+                    pstmt.close();
+                }
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(null,
+                        "An error occurred while closing database resources: " + ex.getMessage());
+            }
+        }
+    }
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        InvoiceUpdate invoiceUpdate = new InvoiceUpdate();
+        invoiceUpdate.setVisible(true);
+    }
+}
